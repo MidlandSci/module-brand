@@ -148,7 +148,42 @@ class Products extends Extended
                     $this->getCollection()->addFieldToFilter('entity_id', ['nin' => $productIds]);
                 }
             }
-        } else {
+        } 
+        else if ($column->getName() == 'position') {
+            /**
+             * The custom `position` column cannot be filtered
+             * with the collection `addFieldToFilter` because
+             * magento does not consider it a valid attribute.
+             * So filtering it must be done manually.
+             */
+            if (
+                $filter = $this->getParam($this->getVarNameFilter(), null)
+            ){
+                $filterValues = $this->_backendHelper->prepareFilterString($filter);
+                
+                if (
+                    !empty($filterValues["product_position"]) &&
+                    !empty($filterValues["product_position"]["from"])
+                ){
+                    /**
+                     * Using `addFieldToFilter` refuses to work.
+                     * So the work-around is to directly invoke
+                     * the underlying query.
+                     */                    
+                    $this->getCollection()
+                        ->getSelect()
+                        ->where('ves_brand_product.position >= ?', $filterValues["product_position"]["from"]);
+                    
+                    if (
+                        !empty($filterValues["product_position"]["to"])
+                    )
+                        $this->getCollection()
+                            ->getSelect()
+                            ->where('ves_brand_product.position <= ?', $filterValues["product_position"]["to"]);
+                }
+            }
+        }
+        else {
             parent::_addColumnFilterToCollection($column);
         }
         return $this;
@@ -164,6 +199,19 @@ class Products extends Extended
         $collection = $this->_linkFactory->create()->useRelatedLinks()->getProductCollection()->addAttributeToSelect(
             '*'
         );
+
+        /**
+         * It isn't including the
+         * position in the collection query,
+         * so we have to add it manually.
+         */
+        $collection->getSelect()->join(
+            ['ves_brand_product'],
+            'e.entity_id = ves_brand_product.product_id',
+            []
+        )
+        ->where('ves_brand_product.brand_id=?', $this->getBrand()->getId())
+        ->group('e.entity_id');
 
         if ($this->isReadonly()) {
             $productIds = $this->_getSelectedProducts();
