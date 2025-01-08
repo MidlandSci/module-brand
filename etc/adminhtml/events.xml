@@ -26,8 +26,6 @@
     </event>
     <event name="controller_action_catalog_product_save_entity_after">
         <observer name="ves_brand_saveproductbrand" instance="Ves\Brand\Observer\SaveProductBrand" />
-    </event>
-    <event name="controller_action_catalog_product_save_entity_after">
         <observer name="ves_brand_saveproductbrand_create" instance="Ves\Brand\Observer\SaveProductBrandModel" />
     </event>
     <event name="catalog_product_attribute_update_after">
